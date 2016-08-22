@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, ml_common, rbm, multrbm, multlogistic
+import sys, ml_common, rbm, rbm_stacked, multlogistic
 import numpy as np
 
 def viewWeights(rbm, imShape, outfile=""):
