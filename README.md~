@@ -46,13 +46,13 @@ Remarkably the values of the hidden nodes give a good representation of the data
 with only 10 hidden nodes the network learns to capture the main features of most of the digits.
 In this case the weights learned are:
 
-<img src="images/weights10.png" width="200" />
+<img src="weights10.png" width="200" />
 
 Each 28x28 pixel block in the figure represents the weights connected to 1 hidden node.
 The fact that the images are "smooth" is further evidence that the contrastive-divergence
 algorithm has converged. Using 150 hidden nodes:
 
-<img src="images/weights150.png" width="600" />
+<img src="weights150.png" width="600" />
 
 With the single-layer RBM the accuracy for different network sizes is:
 
@@ -88,11 +88,11 @@ The weights in the first layer have a very different structure in the two cases:
 
 Weights from RBM:
 
-<img src="images/weights_from_rbm.png" width="600" />
+<img src="weights_from_rbm.png" width="600" />
 
 Weights after backpropagation:
 
-<img src="images/weights_after_backpropagation.png" width="600" />
+<img src="weights_after_backpropagation.png" width="600" />
 
 ## Results on Landsat data
 <p></p>
@@ -103,7 +103,7 @@ The following is a Landsat 8 image of the San Francisco bay
 constructed from the RGB bands and chosen to have less than 4% cloud coverage within the image:
 <br><br>
 
-<img src="images/landsat_sanfrancisco_image.png" width="700" />
+<img src="landsat_sanfrancisco_image.png" width="700" />
 <br><br>
 
 The 7811x7671 pixel image was split into 20x20 pixel non-overlapping
@@ -117,17 +117,17 @@ A multi-layer RBM with a 1200-120-120-10 node configuration was trained on the p
 The weights from the first layer show a combination of filters some of which are sensitive to the image
 structure and some sensitive to the color:
 
-<img src="images/landsat_weights.png" width="450" />
+<img src="landsat_weights.png" width="450" />
 <br><br>
 
 To determine how the RBM classifies the images, the output node with the largest activation signal
 is selected for each patch. Each image below shows patches that resulted in the same output node having the
 largest activation:
 
-<img src="images/landsat_class_0.png" style="float: left; margin-right: 1%; margin-bottom: 0.5em;" width="300"/>
-<img src="images/landsat_class_4.png" style="float: left; margin-right: 1%; margin-bottom: 0.5em;" width="300"/>
-<img src="images/landsat_class_5.png" style="float: left; margin-right: 1%; margin-bottom: 0.5em;" width="300"/>
-<img src="images/landsat_class_8.png" style="float: left; margin-right: 1%; margin-bottom: 0.5em;" width="300"/>
+<img src="landsat_class_0.png" style="float: left; margin-right: 1%; margin-bottom: 0.5em;" width="300"/>
+<img src="landsat_class_4.png" style="float: left; margin-right: 1%; margin-bottom: 0.5em;" width="300"/>
+<img src="landsat_class_5.png" style="float: left; margin-right: 1%; margin-bottom: 0.5em;" width="300"/>
+<img src="landsat_class_8.png" style="float: left; margin-right: 1%; margin-bottom: 0.5em;" width="300"/>
 <p style="clear: both;">
 
 Some of the patches have unnatural looking colors. The patches with strange colors are probably in dark regions or
@@ -136,5 +136,5 @@ Classes 0 and 1 are generally selecting bluer patches (mainly from the ocean)
 and classes 2 and 3 are selecting purple/brown patches (mainly on land).
 The geographical distribution of each class is:
 
-<img src="images/landsat_classification.png" width="400" />
+<img src="landsat_classification.png" width="400" />
 
