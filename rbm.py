@@ -2,15 +2,22 @@
 
 import pickle
 import numpy as np
+import pylab as pl
 
 class RBM:
 
-    def __init__(self, numV, numH, actType=1, numBatchesPerDataSize=100):
+    def __init__(self, numV, numH, actType='Logistic', batchSize=100):
 
         self.numV = numV
         self.numH = numH
-        self.actFunc = self.actRectLinear if actType == 1 else self.actLogistic
-        self.numBatchesPerDataSize = numBatchesPerDataSize
+        if actType == 'Logistic':
+            self.actFunc = self.actLogistic
+        elif actType == 'RectiLinear':
+            self.actFunc = self.actRectLinear
+        else:
+            raise NotImplementedError("Activation type must be Logistic or RectiLinear")
+
+        self.batchSize = batchSize
 
         # Initialize weights to have mu=0, sigm=X.
         self.weights = 0.01 * np.random.randn(self.numV, self.numH)
@@ -40,22 +47,26 @@ class RBM:
         return data
 
     # Recommended weight decay parameter: 0.01 to 0.00001.
-    def learn(self, dataIn, rate=0.1, maxIter=1000, wDecay=0, verbose=True):
+    def learn(self, dataIn, rate=0.01, maxIter=3000, wDecay=0.001, verbose=True, useAllData=False):
 
         data = np.copy(dataIn).astype(np.float64)
         data = np.insert(data, 0, 1, axis=1)
         #data = self.normData(data)
         numData = data.shape[0]
-        numSubData = data.shape[0]//self.numBatchesPerDataSize   # Size of mini-batch.
 
         for it in range(maxIter):
 
-            ind = np.random.uniform(size=numSubData, high=data.shape[0]).astype(int)
-            subData = data[ind,:]
+            #np.random.seed(0)
+
+            if useAllData:
+                subData = data
+            else:
+                ind = np.random.uniform(size=self.batchSize, high=data.shape[0]).astype(int)
+                subData = data[ind,:]
 
             forwdHiddenIn = np.dot(subData, self.weights)
             forwdHiddenProb = self.actFunc(forwdHiddenIn)
-            forwdHiddenState = (forwdHiddenProb > np.random.rand(numSubData, self.numH+1)).astype(int)
+            forwdHiddenState = (forwdHiddenProb > np.random.rand(self.batchSize, self.numH+1)).astype(int)
 
             brac0 = np.dot(subData.T, forwdHiddenProb)
 
@@ -68,9 +79,9 @@ class RBM:
             brac1 = np.dot(bckwdVisibleProb.T, bckwdHiddenProb)
 
             #print("weights:", self.weights)
-            #print("delta(weights):", self.rate * ((brac0 - brac1) / numSubData))
+            #print("delta(weights):", self.rate * ((brac0 - brac1) / self.batchSize))
 
-            self.weights += rate * (brac0 - brac1) / numSubData
+            self.weights += rate * (brac0 - brac1) / self.batchSize
             if wDecay != 0:
                 self.weights -= rate * wDecay * self.weights
 
@@ -137,23 +148,69 @@ class RBM:
 
     def imageWeights(self, imShape):
 
-        assert(imShape[0]*imShape[1] == self.numV)
+        if len(imShape) == 2:
+            imShape = (imShape[0], imShape[1], 1)
+
+        assert(imShape[0]*imShape[1]*imShape[2] == self.numV)
 
         fact = self.factorize(self.numH)
         ny = fact[len(fact)//2] if len(fact) > 0 else 1
         nx = self.numH//ny
+        if max(nx, ny)/min(nx, ny) > 5:
+            ny = int(np.ceil(np.sqrt(self.numH)))
+            nx = int(np.ceil(self.numH/ny))
 
-        tiledImage = np.zeros((nx*imShape[0], ny*imShape[1]), dtype=np.float64)
+        tiledImage = np.zeros((nx*imShape[0], ny*imShape[1], imShape[2]), dtype=np.float64)
+        tempWeights = self.weights[1::,1::].reshape(imShape[0], imShape[1], imShape[2], -1)
         for i in range(nx):
             for j in range(ny):
-                tiledImage[i*imShape[0]:(i+1)*imShape[0],j*imShape[1]:(j+1)*imShape[1]] = self.weights[1::,1+i*ny+j].reshape(imShape[0], imShape[1])
+                tiledImage[i*imShape[0]:(i+1)*imShape[0],j*imShape[1]:(j+1)*imShape[1],:] = tempWeights[:,:,:,i*ny+j]
 
-        return tiledImage
+        return np.squeeze(tiledImage)
+
+    def rgb2gray(self, image):
+        return np.dot(image[...,:3], [0.299, 0.587, 0.114])
+
+    def viewWeights(self, imShape, outfile="", grayScale=False, normalize=True, tiledImage=None, title=""):
+
+        if tiledImage is None:
+            tiledImage = self.imageWeights(imShape)
+
+        if normalize:
+            tiledImage -= np.min(tiledImage)
+            tiledImage *= 255.9999/np.max(tiledImage)
+            tiledImage = tiledImage.astype(np.uint8)
+
+        if len(tiledImage.shape) == 3 and grayScale:
+            tiledImage = self.rgb2gray(tiledImage)
+
+        cmap = pl.get_cmap('gray') if (len(imShape) == 2 or grayScale) else None
+
+        fig = pl.figure()
+        ax = fig.add_subplot(111, aspect=1)
+        ax.imshow(tiledImage, interpolation='none', cmap=cmap)
+        ax.autoscale(False)
+        for i in range(tiledImage.shape[1]//imShape[1]+2):
+            ax.axvline(imShape[1]*i-0.5, color='black', lw=1)
+        for i in range(tiledImage.shape[0]//imShape[0]+2):
+            ax.axhline(imShape[0]*i-0.5, color='black', lw=1)
+
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+
+        if title != "":
+            ax.set_title(title)
+
+        if outfile == "":
+            pl.show()
+        else:
+            pl.savefig(outfile, dpi=500)
+        pl.close('all')
 
 if __name__ == '__main__':
 
     # Example from: http://blog.echen.me/2011/07/18/introduction-to-restricted-boltzmann-machines/
-    rbm = RBM(6, 2, actType=1)
+    rbm = RBM(6, 2, actType='Logistic')
     data = np.array([[1,1,1,0,0,0], [1,0,1,0,0,0], [1,1,1,0,0,0], [0,0,1,1,1,0], [0,0,1,1,0,0], [0,0,1,1,1,0]])
     rbm.learn(data, maxIter=5000)
     print("Weights:", rbm.weights)
